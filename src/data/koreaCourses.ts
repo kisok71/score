@@ -10154,6 +10154,27 @@ export const KOREA_COURSES_RAW: RawKoreaCourse[] = [
   }
 ];
 
+function getSubCoursesForRaw(raw: RawKoreaCourse) {
+  const stdPars: (3 | 4 | 5)[] = [4, 4, 3, 5, 4, 3, 4, 5, 4];
+  const list = [
+    { id: `${raw.id}-sub-1`, name: raw.courses.outCourseName || 'OUT 코스', pars: [...stdPars] },
+    { id: `${raw.id}-sub-2`, name: raw.courses.inCourseName || 'IN 코스', pars: [...stdPars] },
+  ];
+  if (raw.totalHoles >= 27) {
+    const thirdName = raw.courses.outCourseName.includes('동') ? '남 코스' :
+                      raw.courses.outCourseName.includes('레이크') ? '밸리 코스' :
+                      raw.courses.outCourseName.includes('마운틴') ? '힐 코스' : 'C 코스';
+    list.push({ id: `${raw.id}-sub-3`, name: thirdName, pars: [...stdPars] });
+  }
+  if (raw.totalHoles >= 36) {
+    const fourthName = raw.courses.outCourseName.includes('동') ? '북 코스' :
+                       raw.courses.outCourseName.includes('레이크') ? '파인 코스' :
+                       raw.courses.outCourseName.includes('마운틴') ? '레이크 코스' : 'D 코스';
+    list.push({ id: `${raw.id}-sub-4`, name: fourthName, pars: [...stdPars] });
+  }
+  return list;
+}
+
 export function createCourseInstance(raw: RawKoreaCourse): Course {
   let cachedHoles: HoleInfo[] | null = null;
   return {
@@ -10162,6 +10183,7 @@ export function createCourseInstance(raw: RawKoreaCourse): Course {
     location: raw.location,
     totalHoles: raw.totalHoles,
     courses: raw.courses,
+    subCourses: getSubCoursesForRaw(raw),
     tags: raw.tags,
     isCustom: false,
     get holes(): HoleInfo[] {

@@ -13,10 +13,12 @@ import {
   CloudRain,
   Search,
   MapPin,
+  Compass,
 } from 'lucide-react';
 import { CourseSearchModal } from '../course/CourseSearchModal';
 import { CustomCourseBuilderModal } from '../course/CustomCourseBuilderModal';
 import { loadUserName, saveUserName } from '../../utils/storage';
+import { compose18HolesFromSubCourses } from '../../utils/golfHoleGenerator';
 
 interface RoundSetupModalProps {
   isOpen: boolean;
@@ -55,6 +57,29 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
 
   const currentCourse = courses.find(c => c.id === selectedCourseId) || courses[0];
 
+  const [outSubId, setOutSubId] = useState<string>('');
+  const [inSubId, setInSubId] = useState<string>('');
+
+  React.useEffect(() => {
+    if (currentCourse?.subCourses && currentCourse.subCourses.length >= 2) {
+      setOutSubId(currentCourse.subCourses[0].id);
+      setInSubId(currentCourse.subCourses[1]?.id || currentCourse.subCourses[0].id);
+    }
+  }, [currentCourse?.id]);
+
+  const hasMultipleSubCourses = Boolean(currentCourse?.subCourses && currentCourse.subCourses.length >= 2);
+  const selectedOutSub = currentCourse?.subCourses?.find(s => s.id === outSubId) || currentCourse?.subCourses?.[0];
+  const selectedInSub = currentCourse?.subCourses?.find(s => s.id === inSubId) || currentCourse?.subCourses?.[1] || selectedOutSub;
+
+  const roundHoles = hasMultipleSubCourses && selectedOutSub && selectedInSub
+    ? compose18HolesFromSubCourses(currentCourse.name, selectedOutSub, selectedInSub)
+    : currentCourse.holes;
+
+  const totalRoundPar = roundHoles.reduce((sum, h) => sum + h.par, 0);
+  const roundSectionName = hasMultipleSubCourses && selectedOutSub && selectedInSub
+    ? `${selectedOutSub.name} / ${selectedInSub.name}`
+    : `${currentCourse.courses.outCourseName} / ${currentCourse.courses.inCourseName}`;
+
   const handleSelectCourseFromSearch = (course: Course) => {
     setSelectedCourseId(course.id);
   };
@@ -74,12 +99,13 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
       teeOffTime: time,
       courseId: currentCourse.id,
       courseName: currentCourse.name,
-      courseSection: `${currentCourse.courses.outCourseName} / ${currentCourse.courses.inCourseName}`,
+      courseSection: roundSectionName,
       teeBox,
       weather,
       windSpeed,
       status: 'in-progress',
       createdAt: Date.now(),
+      holes: roundHoles,
       players: [
         {
           id: `player-${Date.now()}-0`,
@@ -88,7 +114,7 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
           avatarColor: '#10b981',
           isMainUser: true,
           scores: Object.fromEntries(
-            currentCourse.holes.map(h => [h.holeNumber, {
+            roundHoles.map(h => [h.holeNumber, {
               holeNumber: h.holeNumber,
               strokes: h.par,
               putts: 2,
@@ -179,11 +205,62 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
                   </button>
                 </div>
 
+                {/* 보유 9홀 코스가 2개 이상일 때: 전반/후반 코스 조합 선택 */}
+                {hasMultipleSubCourses && currentCourse.subCourses && (
+                  <div className="pt-2.5 mt-2 border-t border-emerald-950 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-300 font-bold flex items-center gap-1 text-[11px]">
+                        <Compass size={12} className="text-emerald-400" />
+                        <span>플레이 코스 조합 선택</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-mono">
+                        보유 코스 {currentCourse.subCourses.length}개 ({currentCourse.totalHoles}홀)
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-semibold block mb-1">
+                          전반 9홀 (OUT)
+                        </label>
+                        <select
+                          value={outSubId}
+                          onChange={(e) => setOutSubId(e.target.value)}
+                          className="w-full bg-black/60 border border-emerald-900 rounded-xl px-2.5 py-1.5 text-white font-bold text-xs focus:outline-none focus:border-emerald-400"
+                        >
+                          {currentCourse.subCourses.map(sc => (
+                            <option key={sc.id} value={sc.id}>
+                              {sc.name} (Par {sc.pars.reduce((a, b) => a + b, 0)})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-slate-400 font-semibold block mb-1">
+                          후반 9홀 (IN)
+                        </label>
+                        <select
+                          value={inSubId}
+                          onChange={(e) => setInSubId(e.target.value)}
+                          className="w-full bg-black/60 border border-emerald-900 rounded-xl px-2.5 py-1.5 text-white font-bold text-xs focus:outline-none focus:border-emerald-400"
+                        >
+                          {currentCourse.subCourses.map(sc => (
+                            <option key={sc.id} value={sc.id}>
+                              {sc.name} (Par {sc.pars.reduce((a, b) => a + b, 0)})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-2 border-t border-emerald-950 flex items-center justify-between text-[11px]">
-                  <span className="text-emerald-300">
-                    {currentCourse.courses.outCourseName} / {currentCourse.courses.inCourseName}
+                  <span className="text-emerald-300 font-medium">
+                    {roundSectionName}
                   </span>
-                  <span className="text-slate-400 font-mono">18홀 (Par 72)</span>
+                  <span className="text-slate-400 font-mono">18홀 (Par {totalRoundPar})</span>
                 </div>
               </div>
             </div>

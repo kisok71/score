@@ -67,9 +67,10 @@ export const CourseSearchModal: React.FC<CourseSearchModalProps> = ({
       const matchLoc = c.location.toLowerCase().includes(term);
       const matchOut = c.courses.outCourseName.toLowerCase().includes(term);
       const matchIn = c.courses.inCourseName.toLowerCase().includes(term);
+      const matchSub = c.subCourses?.some(s => s.name.toLowerCase().includes(term));
       const matchTag = c.tags?.some(t => t.toLowerCase().includes(term));
 
-      return matchName || matchLoc || matchOut || matchIn || matchTag;
+      return matchName || matchLoc || matchOut || matchIn || matchSub || matchTag;
     });
   }, [courses, searchTerm, selectedTag]);
 
@@ -292,7 +293,9 @@ export const CourseSearchModal: React.FC<CourseSearchModalProps> = ({
                     <div className="mt-2.5 pt-2 border-t border-emerald-950/80 flex items-center justify-between text-[11px] text-slate-400">
                       <div className="flex items-center gap-2">
                         <span className="text-emerald-300 font-medium">
-                          {course.courses.outCourseName} / {course.courses.inCourseName}
+                          {course.subCourses && course.subCourses.length > 2
+                            ? course.subCourses.map(s => s.name).join(' · ')
+                            : `${course.courses.outCourseName} / ${course.courses.inCourseName}`}
                         </span>
                         <span>•</span>
                         <span>{course.totalHoles >= 27 ? `${course.totalHoles}홀 정규` : '18홀 (Par 72)'}</span>

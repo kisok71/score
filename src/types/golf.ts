@@ -30,15 +30,22 @@ export interface HoleInfo {
   };
 }
 
+export interface SubCourse {
+  id: string;
+  name: string;        // e.g. "동 코스", "서 코스", "남 코스", "마운틴 코스"
+  pars: (3 | 4 | 5)[]; // 9개 홀 파 정보 (길이 9)
+}
+
 export interface Course {
   id: string;
   name: string;        // e.g. "사우스스프링스 CC"
   location: string;    // e.g. "경기도 이천시"
-  totalHoles: number;  // 18
+  totalHoles: number;  // 18, 27, 36, 54
   courses: {
     outCourseName: string; // e.g. "레이크 코스"
     inCourseName: string;  // e.g. "마운틴 코스"
   };
+  subCourses?: SubCourse[]; // 골프장 소속 전체 9홀 코스 목록 (동/서/남 등 다중 코스)
   holes: HoleInfo[];    // 18 holes
   isCustom?: boolean;   // 사용자가 직접 등록한 코스 여부
   tags?: string[];      // 예: ["수도권", "KLPGA", "회원제"]
@@ -79,6 +86,7 @@ export interface Round {
   players: Player[];
   status: 'in-progress' | 'completed';
   createdAt: number;
+  holes?: HoleInfo[];    // 해당 라운드에서 선택된 18홀 구성 (다중 코스 조합 지원)
 }
 
 export interface PlayerClubProfile {

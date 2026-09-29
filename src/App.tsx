@@ -35,6 +35,7 @@ import {
 } from './utils/storage';
 import { Course, HoleScore, PlayerClubProfile, Round } from './types/golf';
 import { PRESET_COURSES } from './data/presetCourses';
+import { compose18HolesFromSubCourses } from './utils/golfHoleGenerator';
 
 export const App: React.FC = () => {
   // Persistence state (Production clean deployment - No sample rounds by default)
@@ -64,9 +65,9 @@ export const App: React.FC = () => {
   // Active round object
   const activeRound = rounds.find(r => r.id === activeRoundId) || rounds[0] || null;
 
-  // Active course
+  // Active course & round holes
   const currentCourse = courses.find(c => c.id === activeRound?.courseId) || PRESET_COURSES[0];
-  const holes = currentCourse.holes;
+  const holes = activeRound?.holes && activeRound.holes.length === 18 ? activeRound.holes : currentCourse.holes;
   const currentHole = holes.find(h => h.holeNumber === activeHoleNumber) || holes[0];
 
   // Single player (the golfer)
@@ -132,11 +133,20 @@ export const App: React.FC = () => {
   const handleSelectCourse = (selectedCourse: Course) => {
     if (!activeRound) return;
 
+    const roundHoles = selectedCourse.subCourses && selectedCourse.subCourses.length >= 2
+      ? compose18HolesFromSubCourses(
+          selectedCourse.name,
+          selectedCourse.subCourses[0],
+          selectedCourse.subCourses[1]
+        )
+      : selectedCourse.holes;
+
     const updatedRound: Round = {
       ...activeRound,
       courseId: selectedCourse.id,
       courseName: selectedCourse.name,
       courseSection: `${selectedCourse.courses.outCourseName} / ${selectedCourse.courses.inCourseName}`,
+      holes: roundHoles,
     };
 
     const newRounds = rounds.map(r => (r.id === updatedRound.id ? updatedRound : r));

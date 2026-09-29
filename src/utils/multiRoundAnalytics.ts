@@ -73,6 +73,9 @@ export interface MultiRoundFilterOptions {
  * Helper to retrieve 18 holes for a round's course
  */
 export function getHolesForRound(round: Round, allCourses: Course[]): HoleInfo[] {
+  if (round.holes && round.holes.length === 18) {
+    return round.holes;
+  }
   const course = allCourses.find(c => c.id === round.courseId) ||
                  PRESET_COURSES.find(c => c.id === round.courseId) ||
                  PRESET_COURSES[0];
