@@ -53,12 +53,10 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(false);
   const [builderInitialName, setBuilderInitialName] = useState<string>('');
 
-  if (!isOpen) return null;
-
-  const currentCourse = courses.find(c => c.id === selectedCourseId) || courses[0];
-
   const [outSubId, setOutSubId] = useState<string>('');
   const [inSubId, setInSubId] = useState<string>('');
+
+  const currentCourse = courses.find(c => c.id === selectedCourseId) || courses[0];
 
   React.useEffect(() => {
     if (currentCourse?.subCourses && currentCourse.subCourses.length >= 2) {
@@ -66,6 +64,14 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
       setInSubId(currentCourse.subCourses[1]?.id || currentCourse.subCourses[0].id);
     }
   }, [currentCourse?.id]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setUserName(loadUserName());
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const hasMultipleSubCourses = Boolean(currentCourse?.subCourses && currentCourse.subCourses.length >= 2);
   const selectedOutSub = currentCourse?.subCourses?.find(s => s.id === outSubId) || currentCourse?.subCourses?.[0];
