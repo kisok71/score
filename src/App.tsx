@@ -14,6 +14,7 @@ import { CaddieChatModal } from './components/caddie/CaddieChatModal';
 import { BagSettingsModal } from './components/caddie/BagSettingsModal';
 import { CourseSearchModal } from './components/course/CourseSearchModal';
 import { CustomCourseBuilderModal } from './components/course/CustomCourseBuilderModal';
+import { BackupRestoreModal } from './components/common/BackupRestoreModal';
 
 import {
   loadRounds,
@@ -53,6 +54,7 @@ export const App: React.FC = () => {
   const [isBagSettingsOpen, setIsBagSettingsOpen] = useState<boolean>(false);
   const [isCourseSearchOpen, setIsCourseSearchOpen] = useState<boolean>(false);
   const [isCustomBuilderOpen, setIsCustomBuilderOpen] = useState<boolean>(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState<boolean>(false);
   const [builderInitialName, setBuilderInitialName] = useState<string>('');
 
   // Active round object
@@ -161,7 +163,6 @@ export const App: React.FC = () => {
       setUserName(newName);
       saveUserName(newName);
 
-      // Synchronize active round player name
       if (activeRound) {
         const updatedPlayers = activeRound.players.map(p => ({
           ...p,
@@ -172,6 +173,22 @@ export const App: React.FC = () => {
         updateRounds(newRounds);
       }
     }
+  };
+
+  // Full backup restore handler
+  const handleDataRestored = () => {
+    const loadedRounds = loadRounds();
+    setRounds(loadedRounds);
+    const loadedCourses = getAllCourses();
+    setCourses(loadedCourses);
+    const name = loadUserName();
+    setUserName(name);
+    const prof = loadClubProfile();
+    setClubProfile(prof);
+    if (loadedRounds.length > 0) {
+      setActiveRoundId(loadedRounds[0].id);
+    }
+    setActiveHoleNumber(1);
   };
 
   // Prev / Next Hole
@@ -191,7 +208,7 @@ export const App: React.FC = () => {
 
   return (
     <MobileFrame>
-      {/* Header with interactive course search and Golfer Name display */}
+      {/* Header with interactive course search, Golfer Name, and Backup button */}
       <Header
         round={activeRound}
         userName={userName}
@@ -199,6 +216,7 @@ export const App: React.FC = () => {
         onOpenCaddieChat={() => setIsCaddieChatOpen(true)}
         onOpenBagSettings={() => setIsBagSettingsOpen(true)}
         onOpenCourseSearch={() => setIsCourseSearchOpen(true)}
+        onOpenBackupRestore={() => setIsBackupModalOpen(true)}
       />
 
       {/* Hole Navigator (Always visible on Round and Strategy tabs) */}
@@ -285,6 +303,12 @@ export const App: React.FC = () => {
         onClose={() => setIsCustomBuilderOpen(false)}
         initialCourseName={builderInitialName}
         onSaveCourse={handleSaveCustomCourse}
+      />
+
+      <BackupRestoreModal
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        onDataRestored={handleDataRestored}
       />
 
       <PenaltyGuideModal

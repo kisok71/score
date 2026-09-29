@@ -146,7 +146,11 @@ export function saveActiveRoundId(id: string) {
 export function loadClubProfile(): PlayerClubProfile {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.CLUB_PROFILE);
-    return raw ? JSON.parse(raw) : DEFAULT_CLUB_PROFILE;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return { ...DEFAULT_CLUB_PROFILE, ...parsed, userName: parsed.userName || loadUserName() };
+    }
+    return DEFAULT_CLUB_PROFILE;
   } catch {
     return DEFAULT_CLUB_PROFILE;
   }
@@ -154,6 +158,9 @@ export function loadClubProfile(): PlayerClubProfile {
 
 export function saveClubProfile(profile: PlayerClubProfile) {
   localStorage.setItem(STORAGE_KEYS.CLUB_PROFILE, JSON.stringify(profile));
+  if (profile.userName) {
+    saveUserName(profile.userName);
+  }
 }
 
 export function getAllCourses(): Course[] {
@@ -163,6 +170,15 @@ export function getAllCourses(): Course[] {
     return [...PRESET_COURSES, ...custom];
   } catch {
     return PRESET_COURSES;
+  }
+}
+
+export function getCustomCourses(): Course[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.CUSTOM_COURSES);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
   }
 }
 
@@ -194,5 +210,116 @@ export function deleteCustomCourse(courseId: string): Course[] {
   } catch (e) {
     console.error('Failed to delete custom course', e);
     return PRESET_COURSES;
+  }
+}
+
+// ==========================================
+// Backup & Restore System (JSON Export / Import)
+// ==========================================
+
+export interface AppBackupData {
+  app: 'CaddieMaster';
+  version: '1.0';
+  exportedAt: string;
+  userName: string;
+  clubProfile: PlayerClubProfile;
+  rounds: Round[];
+  customCourses: Course[];
+}
+
+export function createFullBackup(): AppBackupData {
+  const userName = loadUserName();
+  const clubProfile = loadClubProfile();
+  const rounds = loadRounds();
+  const customCourses = getCustomCourses();
+
+  return {
+    app: 'CaddieMaster',
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    userName,
+    clubProfile,
+    rounds,
+    customCourses,
+  };
+}
+
+export function downloadBackupFile() {
+  const backup = createFullBackup();
+  const jsonStr = JSON.stringify(backup, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+  const filename = `caddiemaster_backup_${dateStr}_${timeStr}.json`;
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function restoreFromBackup(
+  backup: AppBackupData,
+  mode: 'overwrite' | 'merge' = 'overwrite'
+): { success: boolean; message: string; roundCount: number; courseCount: number } {
+  try {
+    if (!backup || !backup.rounds || !Array.isArray(backup.rounds)) {
+      return { success: false, message: '올바른 CaddieMaster 백업 파일 형식이 아닙니다.', roundCount: 0, courseCount: 0 };
+    }
+
+    // Restore User Name
+    if (backup.userName) {
+      saveUserName(backup.userName);
+    }
+
+    // Restore Club Profile
+    if (backup.clubProfile) {
+      saveClubProfile(backup.clubProfile);
+    }
+
+    // Restore Rounds
+    let finalRounds: Round[] = [];
+    if (mode === 'merge') {
+      const existingRounds = loadRounds();
+      const existingIds = new Set(existingRounds.map(r => r.id));
+      const newRounds = backup.rounds.filter(r => !existingIds.has(r.id));
+      finalRounds = [...existingRounds, ...newRounds];
+    } else {
+      finalRounds = backup.rounds;
+    }
+    saveRounds(finalRounds);
+
+    if (finalRounds.length > 0) {
+      saveActiveRoundId(finalRounds[0].id);
+    }
+
+    // Restore Custom Courses
+    let finalCourses: Course[] = [];
+    const backupCustomCourses = backup.customCourses || [];
+    if (mode === 'merge') {
+      const existingCustom = getCustomCourses();
+      const existingIds = new Set(existingCustom.map(c => c.id));
+      const newCourses = backupCustomCourses.filter(c => !existingIds.has(c.id));
+      finalCourses = [...existingCustom, ...newCourses];
+    } else {
+      finalCourses = backupCustomCourses;
+    }
+    localStorage.setItem(STORAGE_KEYS.CUSTOM_COURSES, JSON.stringify(finalCourses));
+
+    return {
+      success: true,
+      message: '성공적으로 백업 데이터를 불러왔습니다!',
+      roundCount: finalRounds.length,
+      courseCount: finalCourses.length,
+    };
+  } catch (e: any) {
+    console.error('Failed to restore backup', e);
+    return { success: false, message: `복원 중 오류 발생: ${e?.message || e}`, roundCount: 0, courseCount: 0 };
   }
 }

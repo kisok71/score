@@ -1,8 +1,7 @@
 // src/components/dashboard/ScoreCardView.tsx
 import React, { useState } from 'react';
 import { HoleInfo, Player, Round } from '../../types/golf';
-import { classifyScore } from '../../utils/golfCalculator';
-import { Share2, Award, Check } from 'lucide-react';
+import { Share2, Award, Check, Printer, FileText } from 'lucide-react';
 
 interface ScoreCardViewProps {
   round: Round;
@@ -64,6 +63,10 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
     }
   };
 
+  const handlePrint = () => {
+    window.print();
+  };
+
   const renderScoreCell = (par: number, strokes: number) => {
     if (!strokes || strokes === 0) return <span className="text-slate-600">-</span>;
     const diff = strokes - par;
@@ -102,7 +105,7 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
   };
 
   return (
-    <div className="p-4 space-y-4 max-w-full">
+    <div className="p-4 space-y-4 max-w-full print-container">
       {/* Scorecard Header */}
       <div className="bg-[#101c17] border border-emerald-900/60 rounded-3xl p-4 shadow-xl">
         <div className="flex items-center justify-between mb-3">
@@ -114,13 +117,26 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
             <h2 className="text-lg font-black text-white">{round.courseName}</h2>
           </div>
 
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs transition-all shadow-md shadow-emerald-950"
-          >
-            {isCopied ? <Check size={14} className="text-white" /> : <Share2 size={14} />}
-            <span>{isCopied ? '복사 완료!' : '스코어 공유'}</span>
-          </button>
+          <div className="flex items-center gap-1.5 no-print">
+            {/* Screen Output / Print Button */}
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 hover:text-white font-bold text-xs transition-all border border-slate-700 shadow-sm"
+              title="스코어카드 인쇄 및 PDF 출력"
+            >
+              <Printer size={14} className="text-emerald-400" />
+              <span>화면 출력</span>
+            </button>
+
+            {/* Share Button */}
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold text-xs transition-all shadow-md shadow-emerald-950"
+            >
+              {isCopied ? <Check size={14} className="text-white" /> : <Share2 size={14} />}
+              <span>{isCopied ? '복사 완료!' : '공유'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Golfer Info Ribbon */}
@@ -168,7 +184,7 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
           <span className="text-[11px] text-slate-400 font-mono">소계: <strong className="text-white">{outTotal.strokeTotal}타</strong> (Par {outTotal.parTotal})</span>
         </div>
 
-        <table className="w-full text-center text-[11px] border-collapse">
+        <table className="w-full text-center text-[11px] border-collapse print-table">
           <thead>
             <tr className="bg-black/40 text-slate-400">
               <th className="py-1 px-1 rounded-l-lg">홀</th>
@@ -225,7 +241,7 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
           <span className="text-[11px] text-slate-400 font-mono">소계: <strong className="text-white">{inTotal.strokeTotal}타</strong> (Par {inTotal.parTotal})</span>
         </div>
 
-        <table className="w-full text-center text-[11px] border-collapse">
+        <table className="w-full text-center text-[11px] border-collapse print-table">
           <thead>
             <tr className="bg-black/40 text-slate-400">
               <th className="py-1 px-1 rounded-l-lg">홀</th>
@@ -276,7 +292,7 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
       </div>
 
       {/* Legend & Rules Indicator */}
-      <div className="bg-black/20 rounded-2xl p-3 text-[10px] text-slate-400 flex flex-wrap items-center justify-around gap-2 border border-slate-900">
+      <div className="bg-black/20 rounded-2xl p-3 text-[10px] text-slate-400 flex flex-wrap items-center justify-around gap-2 border border-slate-900 no-print">
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded-full bg-emerald-500 text-black font-bold flex items-center justify-center text-[9px]">O</span>
           <span>버디 (Circle)</span>
@@ -292,6 +308,45 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
         <div className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded bg-rose-950 border-2 border-rose-600 text-rose-300 flex items-center justify-center font-bold text-[9px]">■</span>
           <span>더블보기+</span>
+        </div>
+      </div>
+
+      {/* Official Certificate & Print Attestation Section */}
+      <div className="bg-gradient-to-br from-black/40 to-[#0e1713] border border-emerald-900/60 rounded-3xl p-4 text-xs space-y-3 shadow-lg">
+        <div className="flex items-center justify-between pb-2 border-b border-emerald-950">
+          <div className="flex items-center gap-2">
+            <FileText size={16} className="text-emerald-400" />
+            <div>
+              <span className="font-bold text-white block">공식 라운드 인증 스코어카드</span>
+              <span className="text-[10px] text-slate-400">발행: CaddieMaster 공식 경기 위원회</span>
+            </div>
+          </div>
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/30 transition-all no-print"
+          >
+            <Printer size={13} />
+            <span>스코어카드 인쇄 / PDF 출력</span>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 pt-1">
+          <div className="border border-emerald-950/80 bg-black/30 rounded-2xl p-3 text-center">
+            <span className="text-[10px] text-slate-400 block mb-2">플레이어 (골퍼 서명)</span>
+            <div className="font-mono font-bold text-white border-b border-slate-700 pb-1.5 mx-2 text-sm">
+              {activePlayer.name}
+            </div>
+            <span className="text-[9px] text-slate-500 block mt-1">Player Attested</span>
+          </div>
+
+          <div className="border border-emerald-950/80 bg-black/30 rounded-2xl p-3 text-center">
+            <span className="text-[10px] text-slate-400 block mb-2">전담 투어 캐디 매니저</span>
+            <div className="font-bold text-emerald-400 border-b border-slate-700 pb-1.5 mx-2 text-sm flex items-center justify-center gap-1">
+              <span>Caddie Master</span>
+              <span className="text-[9px] px-1 rounded bg-emerald-950 border border-emerald-700 text-emerald-300 font-normal">검인 完</span>
+            </div>
+            <span className="text-[9px] text-slate-500 block mt-1">Verified & Approved</span>
+          </div>
         </div>
       </div>
     </div>

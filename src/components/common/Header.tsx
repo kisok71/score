@@ -1,6 +1,5 @@
 // src/components/common/Header.tsx
-import React from 'react';
-import { Flag, Sparkles, SlidersHorizontal, PlusCircle, Compass, Search } from 'lucide-react';
+import { Flag, Sparkles, SlidersHorizontal, PlusCircle, Compass, Search, Database } from 'lucide-react';
 import { Round } from '../../types/golf';
 
 interface HeaderProps {
@@ -10,6 +9,7 @@ interface HeaderProps {
   onOpenCaddieChat: () => void;
   onOpenBagSettings: () => void;
   onOpenCourseSearch?: () => void;
+  onOpenBackupRestore?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCaddieChat,
   onOpenBagSettings,
   onOpenCourseSearch,
+  onOpenBackupRestore,
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-[#0b1411]/90 backdrop-blur-md border-b border-emerald-900/30 px-4 pt-3 pb-3">
@@ -65,6 +66,15 @@ export const Header: React.FC<HeaderProps> = ({
             title="나의 클럽별 비거리 설정"
           >
             <SlidersHorizontal size={16} />
+          </button>
+
+          {/* Data Backup & Restore Button */}
+          <button
+            onClick={onOpenBackupRestore}
+            className="p-1.5 rounded-xl bg-slate-800/60 border border-slate-700/60 text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 active:scale-95 transition-all"
+            title="데이터 백업 및 불러오기"
+          >
+            <Database size={16} />
           </button>
 
           {/* New Round Setup Button */}
