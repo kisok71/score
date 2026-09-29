@@ -53,6 +53,7 @@ export const App: React.FC = () => {
   const [isBagSettingsOpen, setIsBagSettingsOpen] = useState<boolean>(false);
   const [isCourseSearchOpen, setIsCourseSearchOpen] = useState<boolean>(false);
   const [isCustomBuilderOpen, setIsCustomBuilderOpen] = useState<boolean>(false);
+  const [builderInitialName, setBuilderInitialName] = useState<string>('');
 
   // Active round object
   const activeRound = rounds.find(r => r.id === activeRoundId) || rounds[0] || null;
@@ -272,13 +273,17 @@ export const App: React.FC = () => {
         courses={courses}
         selectedCourseId={currentCourse.id}
         onSelectCourse={handleSelectCourse}
-        onOpenCreateCourse={() => setIsCustomBuilderOpen(true)}
+        onOpenCreateCourse={(defaultName?: string) => {
+          setBuilderInitialName(defaultName || '');
+          setIsCustomBuilderOpen(true);
+        }}
         onDeleteCustomCourse={handleDeleteCustomCourse}
       />
 
       <CustomCourseBuilderModal
         isOpen={isCustomBuilderOpen}
         onClose={() => setIsCustomBuilderOpen(false)}
+        initialCourseName={builderInitialName}
         onSaveCourse={handleSaveCustomCourse}
       />
 

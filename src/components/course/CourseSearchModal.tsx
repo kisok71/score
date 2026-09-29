@@ -19,7 +19,7 @@ interface CourseSearchModalProps {
   courses: Course[];
   selectedCourseId: string;
   onSelectCourse: (course: Course) => void;
-  onOpenCreateCourse: () => void;
+  onOpenCreateCourse: (defaultName?: string) => void;
   onDeleteCustomCourse?: (courseId: string) => void;
 }
 
@@ -132,7 +132,7 @@ export const CourseSearchModal: React.FC<CourseSearchModalProps> = ({
             <button
               onClick={() => {
                 onClose();
-                onOpenCreateCourse();
+                onOpenCreateCourse(searchTerm.trim() || undefined);
               }}
               className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-bold hover:bg-emerald-500/25 active:scale-95 transition-all shadow-sm"
             >
@@ -144,22 +144,60 @@ export const CourseSearchModal: React.FC<CourseSearchModalProps> = ({
 
         {/* Course List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+          {/* Quick Register Banner while searching */}
+          {searchTerm.trim() && filteredCourses.length > 0 && (
+            <div
+              onClick={() => {
+                onClose();
+                onOpenCreateCourse(searchTerm.trim());
+              }}
+              className="p-3 rounded-2xl bg-gradient-to-r from-emerald-950/60 to-black border border-dashed border-emerald-700/60 hover:border-emerald-400 flex items-center justify-between cursor-pointer group transition-all"
+            >
+              <div className="flex items-center gap-2">
+                <PlusCircle size={15} className="text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span className="text-xs text-emerald-200">
+                  찾으시는 코스가 없나요? <strong className="text-emerald-300 font-bold">'{searchTerm.trim()}'</strong> 사전에 직접 등록
+                </span>
+              </div>
+              <span className="text-[11px] text-emerald-400 font-bold group-hover:translate-x-0.5 transition-transform">
+                등록 →
+              </span>
+            </div>
+          )}
+
           {filteredCourses.length === 0 ? (
-            <div className="h-48 flex flex-col items-center justify-center text-center p-4">
-              <Flag size={32} className="text-slate-600 mb-2" />
-              <p className="text-sm font-bold text-slate-300">검색된 골프 코스가 없습니다</p>
-              <p className="text-xs text-slate-500 mt-1 mb-3">
-                찾으시는 골프장을 직접 간편하게 등록해 보세요!
+            <div className="py-8 px-4 flex flex-col items-center justify-center text-center">
+              <div className="w-14 h-14 rounded-3xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-3 shadow-lg">
+                <Sparkles size={24} className="animate-pulse" />
+              </div>
+              <h4 className="text-base font-bold text-white mb-1">
+                {searchTerm.trim() ? (
+                  <span>
+                    <span className="text-amber-300">"{searchTerm.trim()}"</span> 코스가 없습니다
+                  </span>
+                ) : (
+                  '검색 조건에 맞는 골프 코스가 없습니다'
+                )}
+              </h4>
+              <p className="text-xs text-slate-400 max-w-xs mb-4 leading-relaxed">
+                {searchTerm.trim()
+                  ? `"${searchTerm.trim()}" 코스 정보를 사전에 직접 입력해 두시면 언제든 스코어 기록과 코스 공략에 활용하실 수 있습니다.`
+                  : '자주 가시는 골프 코스 정보를 사전에 직접 입력해 보세요.'}
               </p>
               <button
+                type="button"
                 onClick={() => {
                   onClose();
-                  onOpenCreateCourse();
+                  onOpenCreateCourse(searchTerm.trim() || undefined);
                 }}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md"
+                className="w-full max-w-xs py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/80 active:scale-95 transition-all"
               >
-                <PlusCircle size={14} />
-                <span>새 골프코스 직접 입력하기</span>
+                <PlusCircle size={16} />
+                <span>
+                  {searchTerm.trim()
+                    ? `'${searchTerm.trim()}' 코스 사전에 직접 입력하기`
+                    : '새 골프 코스 사전에 직접 등록하기'}
+                </span>
               </button>
             </div>
           ) : (

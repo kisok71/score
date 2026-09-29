@@ -17,12 +17,14 @@ interface CustomCourseBuilderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaveCourse: (course: Course) => void;
+  initialCourseName?: string;
 }
 
 export const CustomCourseBuilderModal: React.FC<CustomCourseBuilderModalProps> = ({
   isOpen,
   onClose,
   onSaveCourse,
+  initialCourseName,
 }) => {
   const [courseName, setCourseName] = useState<string>('');
   const [location, setLocation] = useState<string>('경기도');
@@ -30,6 +32,35 @@ export const CustomCourseBuilderModal: React.FC<CustomCourseBuilderModalProps> =
   const [inCourseName, setInCourseName] = useState<string>('IN 코스');
   const [activeTab, setActiveTab] = useState<'out' | 'in'>('out');
   const [showHoleDetails, setShowHoleDetails] = useState<boolean>(false);
+
+  // Auto-fill course name and smart-detect region if searched previously
+  React.useEffect(() => {
+    if (isOpen) {
+      if (initialCourseName && initialCourseName.trim()) {
+        const name = initialCourseName.trim();
+        setCourseName(name);
+
+        // Smart city/region detection
+        if (name.includes('안성')) setLocation('경기도 안성시');
+        else if (name.includes('용인')) setLocation('경기도 용인시');
+        else if (name.includes('여주')) setLocation('경기도 여주시');
+        else if (name.includes('이천')) setLocation('경기도 이천시');
+        else if (name.includes('가평')) setLocation('경기도 가평군');
+        else if (name.includes('포천')) setLocation('경기도 포천시');
+        else if (name.includes('화성')) setLocation('경기도 화성시');
+        else if (name.includes('파주')) setLocation('경기도 파주시');
+        else if (name.includes('춘천')) setLocation('강원도 춘천시');
+        else if (name.includes('원주')) setLocation('강원도 원주시');
+        else if (name.includes('홍천')) setLocation('강원도 홍천군');
+        else if (name.includes('천안')) setLocation('충청남도 천안시');
+        else if (name.includes('충주')) setLocation('충청북도 충주시');
+        else if (name.includes('제주') || name.includes('서귀포')) setLocation('제주특별자치도');
+        else if (name.includes('송도') || name.includes('인천')) setLocation('인천광역시');
+        else if (name.includes('부산') || name.includes('기장')) setLocation('부산광역시');
+        else if (name.includes('대구')) setLocation('대구광역시');
+      }
+    }
+  }, [isOpen, initialCourseName]);
 
   // Default 18 holes data (Standard Par 72)
   const [holes, setHoles] = useState<HoleInfo[]>(() => {

@@ -49,6 +49,7 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
   // Sub modals
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(false);
+  const [builderInitialName, setBuilderInitialName] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -346,7 +347,10 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
         courses={courses}
         selectedCourseId={selectedCourseId}
         onSelectCourse={handleSelectCourseFromSearch}
-        onOpenCreateCourse={() => setIsBuilderOpen(true)}
+        onOpenCreateCourse={(defaultName?: string) => {
+          setBuilderInitialName(defaultName || '');
+          setIsBuilderOpen(true);
+        }}
         onDeleteCustomCourse={onDeleteCustomCourse}
       />
 
@@ -354,6 +358,7 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
       <CustomCourseBuilderModal
         isOpen={isBuilderOpen}
         onClose={() => setIsBuilderOpen(false)}
+        initialCourseName={builderInitialName}
         onSaveCourse={handleCreatedCustomCourse}
       />
     </>
