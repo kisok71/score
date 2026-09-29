@@ -1,6 +1,5 @@
 // src/utils/storage.ts
 import { PRESET_COURSES } from '../data/presetCourses';
-import { generateSampleRounds } from '../data/sampleRounds';
 import { Course, PlayerClubProfile, Round } from '../types/golf';
 
 const STORAGE_KEYS = {
@@ -41,28 +40,26 @@ export function saveUserName(name: string) {
 export function loadRounds(): Round[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.ROUNDS);
-    const userName = loadUserName();
     if (!raw) {
-      const initial = generateSampleRounds(userName);
-      saveRounds(initial);
-      return initial;
+      return [];
     }
     const parsed: Round[] = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      const initial = generateSampleRounds(userName);
-      saveRounds(initial);
-      return initial;
+      return [];
     }
 
-    // If storage only had the legacy single round ('showcase-round-1'), upgrade to 10 sample rounds
-    if (parsed.length === 1 && parsed[0].id === 'showcase-round-1') {
-      const initial = generateSampleRounds(userName);
-      saveRounds(initial);
-      return initial;
+    // Filter out all sample/showcase rounds for production clean deployment
+    const realRounds = parsed.filter(
+      r => !r.id.startsWith('sample-round-') && r.id !== 'showcase-round-1'
+    );
+
+    // Save cleaned real rounds if any sample was purged
+    if (realRounds.length !== parsed.length) {
+      saveRounds(realRounds);
     }
 
-    // Ensure only single main user is kept for each round
-    const cleaned = parsed.map(r => ({
+    const userName = loadUserName();
+    return realRounds.map(r => ({
       ...r,
       players: r.players
         .filter(p => p.isMainUser || p.id === 'player-1' || p.id === r.players[0]?.id)
@@ -73,11 +70,9 @@ export function loadRounds(): Round[] {
           isMainUser: true,
         }))
     }));
-
-    return cleaned;
   } catch (e) {
     console.error('Failed to load rounds', e);
-    return generateSampleRounds(loadUserName());
+    return [];
   }
 }
 
@@ -98,6 +93,8 @@ export function deleteRound(roundId: string): Round[] {
   if (activeId === roundId) {
     if (updated.length > 0) {
       saveActiveRoundId(updated[0].id);
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.ACTIVE_ROUND_ID);
     }
   }
 
@@ -114,18 +111,15 @@ export function updateRound(updatedRound: Round): Round[] {
   return updated;
 }
 
-export function resetSampleRounds(): Round[] {
-  const userName = loadUserName();
-  const samples = generateSampleRounds(userName);
-  saveRounds(samples);
-  if (samples.length > 0) {
-    saveActiveRoundId(samples[0].id);
-  }
-  return samples;
-}
-
 export function loadActiveRoundId(): string | null {
-  return localStorage.getItem(STORAGE_KEYS.ACTIVE_ROUND_ID) || 'sample-round-1';
+  const id = localStorage.getItem(STORAGE_KEYS.ACTIVE_ROUND_ID);
+  if (!id || id.startsWith('sample-round-') || id === 'showcase-round-1') {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.ACTIVE_ROUND_ID);
+    } catch {}
+    return null;
+  }
+  return id;
 }
 
 export function saveActiveRoundId(id: string) {

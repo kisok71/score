@@ -27,12 +27,14 @@ interface MultiRoundAnalyticsProps {
   rounds: Round[];
   allCourses: Course[];
   onSelectRound?: (roundId: string) => void;
+  onOpenNewRound?: () => void;
 }
 
 export const MultiRoundAnalytics: React.FC<MultiRoundAnalyticsProps> = ({
   rounds,
   allCourses,
   onSelectRound,
+  onOpenNewRound,
 }) => {
   const [filter, setFilter] = useState<MultiRoundFilterOptions>({
     period: '10',
@@ -151,10 +153,18 @@ export const MultiRoundAnalytics: React.FC<MultiRoundAnalyticsProps> = ({
       </div>
 
       {stats.totalRounds === 0 ? (
-        <div className="text-center py-10 bg-[#0c1612] rounded-3xl border border-emerald-950 p-6 space-y-2">
-          <Info size={32} className="text-slate-600 mx-auto" />
-          <h4 className="text-sm font-bold text-slate-300">선택한 조건의 라운드 기록이 없습니다</h4>
-          <p className="text-xs text-slate-500">필터 조건을 변경하거나 새 라운드를 기록해 보세요.</p>
+        <div className="text-center py-12 bg-[#0c1612] rounded-3xl border border-emerald-950 p-6 space-y-3">
+          <Info size={36} className="text-slate-600 mx-auto" />
+          <h4 className="text-sm font-bold text-slate-300">누적된 경기 기록이 없습니다</h4>
+          <p className="text-xs text-slate-500">새 라운드를 등록하고 18홀 스코어를 기록하시면 투어급 누적 통계와 타수 추이 분석이 제공됩니다.</p>
+          {onOpenNewRound && (
+            <button
+              onClick={onOpenNewRound}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950 mt-1 active:scale-95 transition-all"
+            >
+              새 라운드 시작하기
+            </button>
+          )}
         </div>
       ) : (
         <>

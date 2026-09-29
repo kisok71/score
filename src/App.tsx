@@ -16,13 +16,13 @@ import { BagSettingsModal } from './components/caddie/BagSettingsModal';
 import { CourseSearchModal } from './components/course/CourseSearchModal';
 import { CustomCourseBuilderModal } from './components/course/CustomCourseBuilderModal';
 import { BackupRestoreModal } from './components/common/BackupRestoreModal';
+import { Flag, PlusCircle } from 'lucide-react';
 
 import {
   loadRounds,
   saveRounds,
   deleteRound,
   updateRound,
-  resetSampleRounds,
   loadActiveRoundId,
   saveActiveRoundId,
   loadClubProfile,
@@ -37,9 +37,9 @@ import { Course, HoleScore, PlayerClubProfile, Round } from './types/golf';
 import { PRESET_COURSES } from './data/presetCourses';
 
 export const App: React.FC = () => {
-  // Persistence state
+  // Persistence state (Production clean deployment - No sample rounds by default)
   const [rounds, setRounds] = useState<Round[]>(() => loadRounds());
-  const [activeRoundId, setActiveRoundId] = useState<string>(() => loadActiveRoundId() || 'showcase-round-1');
+  const [activeRoundId, setActiveRoundId] = useState<string | null>(() => loadActiveRoundId());
   const [userName, setUserName] = useState<string>(() => loadUserName());
   const [clubProfile, setClubProfile] = useState<PlayerClubProfile>(() => {
     const prof = loadClubProfile();
@@ -224,14 +224,6 @@ export const App: React.FC = () => {
     setRounds(updated);
   };
 
-  const handleResetSamples = () => {
-    const fresh = resetSampleRounds();
-    setRounds(fresh);
-    if (fresh.length > 0) {
-      setActiveRoundId(fresh[0].id);
-    }
-  };
-
   // Prev / Next Hole
   const handlePrevHole = () => {
     if (activeHoleNumber > 1) {
@@ -260,7 +252,7 @@ export const App: React.FC = () => {
         onOpenBackupRestore={() => setIsBackupModalOpen(true)}
       />
 
-      {/* Hole Navigator (Always visible on Round and Strategy tabs) */}
+      {/* Hole Navigator (Always visible on Round and Strategy tabs when active round exists) */}
       {(currentTab === 'round' || currentTab === 'strategy') && activePlayer && (
         <HoleNavigator
           holes={holes}
@@ -272,16 +264,37 @@ export const App: React.FC = () => {
 
       {/* Main Tab Content */}
       <main className="flex-1 overflow-y-auto">
-        {currentTab === 'round' && activeRound && activePlayer && (
-          <HoleScoreInput
-            hole={currentHole}
-            player={activePlayer}
-            onUpdateScore={handleUpdateScore}
-            onPrevHole={handlePrevHole}
-            onNextHole={handleNextHole}
-            onOpenPenaltyGuide={() => setIsPenaltyGuideOpen(true)}
-            onOpenStrategy={() => setCurrentTab('strategy')}
-          />
+        {currentTab === 'round' && (
+          activeRound && activePlayer ? (
+            <HoleScoreInput
+              hole={currentHole}
+              player={activePlayer}
+              onUpdateScore={handleUpdateScore}
+              onPrevHole={handlePrevHole}
+              onNextHole={handleNextHole}
+              onOpenPenaltyGuide={() => setIsPenaltyGuideOpen(true)}
+              onOpenStrategy={() => setCurrentTab('strategy')}
+            />
+          ) : (
+            <div className="p-8 text-center space-y-4 my-auto flex flex-col items-center justify-center min-h-[50vh]">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-950">
+                <Flag size={32} />
+              </div>
+              <div className="space-y-1 max-w-xs">
+                <h3 className="text-base font-black text-white">진행 중인 라운드가 없습니다</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  골프장과 티업 시간을 설정하고 새로운 18홀 라운드를 시작해 보세요!
+                </p>
+              </div>
+              <button
+                onClick={() => setIsNewRoundOpen(true)}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs rounded-2xl shadow-xl shadow-emerald-950 flex items-center gap-2 active:scale-95 transition-all"
+              >
+                <PlusCircle size={16} />
+                <span>새 라운드 시작하기</span>
+              </button>
+            </div>
+          )
         )}
 
         {currentTab === 'strategy' && (
@@ -292,21 +305,43 @@ export const App: React.FC = () => {
           />
         )}
 
-        {currentTab === 'scorecard' && activeRound && activePlayer && (
-          <ScoreCardView
-            round={activeRound}
-            holes={holes}
-            mainPlayer={activePlayer}
-          />
+        {currentTab === 'scorecard' && (
+          activeRound && activePlayer ? (
+            <ScoreCardView
+              round={activeRound}
+              holes={holes}
+              mainPlayer={activePlayer}
+            />
+          ) : (
+            <div className="p-8 text-center space-y-4 my-auto flex flex-col items-center justify-center min-h-[50vh]">
+              <div className="w-16 h-16 rounded-3xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-950">
+                <Flag size={32} />
+              </div>
+              <div className="space-y-1 max-w-xs">
+                <h3 className="text-base font-black text-white">기록된 스코어카드가 없습니다</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  새 라운드를 시작하고 18홀 스코어를 입력하시면 공식 스코어카드가 생성됩니다.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsNewRoundOpen(true)}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs rounded-2xl shadow-xl shadow-emerald-950 flex items-center gap-2 active:scale-95 transition-all"
+              >
+                <PlusCircle size={16} />
+                <span>새 라운드 시작하기</span>
+              </button>
+            </div>
+          )
         )}
 
-        {currentTab === 'analytics' && activeRound && (
+        {currentTab === 'analytics' && (
           <AnalyticsDashboard
             round={activeRound}
             holes={holes}
             allRounds={rounds}
             allCourses={courses}
             onSelectRound={handleSelectActiveRound}
+            onOpenNewRound={() => setIsNewRoundOpen(true)}
           />
         )}
 
@@ -319,7 +354,6 @@ export const App: React.FC = () => {
             onDeleteRound={handleDeleteRound}
             onUpdateRound={handleUpdateRound}
             onOpenNewRound={() => setIsNewRoundOpen(true)}
-            onResetSamples={handleResetSamples}
           />
         )}
       </main>

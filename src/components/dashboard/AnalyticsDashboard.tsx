@@ -18,11 +18,12 @@ import {
 } from 'lucide-react';
 
 interface AnalyticsDashboardProps {
-  round: Round;
+  round: Round | null;
   holes: HoleInfo[];
   allRounds: Round[];
   allCourses?: Course[];
   onSelectRound?: (roundId: string) => void;
+  onOpenNewRound?: () => void;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
@@ -31,12 +32,30 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   allRounds,
   allCourses = [],
   onSelectRound,
+  onOpenNewRound,
 }) => {
   const [dashboardMode, setDashboardMode] = useState<'multi' | 'single'>('multi');
   const [selectedSubTab, setSelectedSubTab] = useState<'overview' | 'parStats' | 'shotDetails' | 'courses'>('overview');
 
-  const mainPlayer = round.players.find(p => p.isMainUser) || round.players[0];
-  const stats: RoundStats = calculateRoundStats(round, holes, mainPlayer);
+  const mainPlayer = round ? (round.players.find(p => p.isMainUser) || round.players[0]) : undefined;
+  const stats: RoundStats = (round && mainPlayer)
+    ? calculateRoundStats(round, holes, mainPlayer)
+    : {
+        totalStrokes: 0,
+        overPar: 0,
+        frontStrokes: 0,
+        backStrokes: 0,
+        totalPutts: 0,
+        avgPuttsPerHole: 0,
+        fairwayAccuracy: 0,
+        girRate: 0,
+        scramblingRate: 0,
+        totalOB: 0,
+        totalHazard: 0,
+        penaltyStrokesLost: 0,
+        scoreBreakdown: { albatross: 0, eagle: 0, birdie: 0, par: 0, bogey: 0, doubleBogey: 0, triplePlus: 0 },
+        parStats: { par3Avg: 0, par4Avg: 0, par5Avg: 0 },
+      };
   const caddieAdvice = getCaddieMentalAdvice(stats, 18);
 
   // Score distribution counts
@@ -83,7 +102,22 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           rounds={allRounds}
           allCourses={allCourses}
           onSelectRound={onSelectRound}
+          onOpenNewRound={onOpenNewRound}
         />
+      ) : !round ? (
+        <div className="text-center py-12 bg-[#0c1612] rounded-3xl border border-emerald-950 p-6 space-y-3">
+          <Flag size={36} className="text-slate-600 mx-auto" />
+          <h4 className="text-sm font-bold text-slate-300">현재 선택된 라운드가 없습니다</h4>
+          <p className="text-xs text-slate-500">새 라운드를 등록하고 18홀 스코어를 입력하시면 홀별 상세 분석이 제공됩니다.</p>
+          {onOpenNewRound && (
+            <button
+              onClick={onOpenNewRound}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950 mt-1 active:scale-95 transition-all"
+            >
+              새 라운드 시작하기
+            </button>
+          )}
+        </div>
       ) : (
         <>
           {/* Top Banner / Round Summary Card */}
@@ -397,7 +431,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-black/30 border border-emerald-950">
                 <span className="text-slate-300">총 벙커 탈출 횟수</span>
                 <span className="font-mono font-bold text-amber-300">
-                  {Object.values(mainPlayer.scores).reduce((acc, s) => acc + (s.bunkerCount || 0), 0)}회
+                  {mainPlayer ? Object.values(mainPlayer.scores).reduce((acc, s) => acc + (s.bunkerCount || 0), 0) : 0}회
                 </span>
               </div>
 

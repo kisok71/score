@@ -14,7 +14,6 @@ import {
   Search,
   Trophy,
   Activity,
-  RotateCcw,
   Sun,
   Cloud,
   Wind,
@@ -26,13 +25,12 @@ import {
 
 interface RoundHistoryViewProps {
   rounds: Round[];
-  activeRoundId: string;
+  activeRoundId: string | null;
   allCourses: Course[];
   onSelectRound: (roundId: string) => void;
   onDeleteRound: (roundId: string) => void;
   onUpdateRound: (updatedRound: Round) => void;
   onOpenNewRound: () => void;
-  onResetSamples?: () => void;
 }
 
 export const RoundHistoryView: React.FC<RoundHistoryViewProps> = ({
@@ -43,7 +41,6 @@ export const RoundHistoryView: React.FC<RoundHistoryViewProps> = ({
   onDeleteRound,
   onUpdateRound,
   onOpenNewRound,
-  onResetSamples,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -138,16 +135,6 @@ export const RoundHistoryView: React.FC<RoundHistoryViewProps> = ({
             <h2 className="text-xl font-black text-white">경기 기록 목록</h2>
           </div>
           <div className="flex items-center gap-1.5">
-            {onResetSamples && (
-              <button
-                onClick={onResetSamples}
-                className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold flex items-center gap-1 transition-all"
-                title="기본 샘플 10경기 데이터 복원"
-              >
-                <RotateCcw size={13} />
-                <span className="hidden sm:inline">샘플 초기화</span>
-              </button>
-            )}
             <button
               onClick={onOpenNewRound}
               className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1 shadow-md shadow-emerald-950 transition-all active:scale-95"
