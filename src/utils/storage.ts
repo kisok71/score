@@ -7,9 +7,11 @@ const STORAGE_KEYS = {
   ACTIVE_ROUND_ID: 'caddiemaster_active_round_id_v1',
   CLUB_PROFILE: 'caddiemaster_club_profile_v1',
   CUSTOM_COURSES: 'caddiemaster_custom_courses_v1',
+  USER_NAME: 'caddiemaster_user_name_v1',
 };
 
 export const DEFAULT_CLUB_PROFILE: PlayerClubProfile = {
+  userName: '골퍼 (나)',
   driverDistance: 220,
   wood3Distance: 200,
   utilityDistance: 185,
@@ -19,14 +21,27 @@ export const DEFAULT_CLUB_PROFILE: PlayerClubProfile = {
   preferredShotShape: 'straight',
 };
 
-// Realistic mock round for initial showcase
+export function loadUserName(): string {
+  try {
+    return localStorage.getItem(STORAGE_KEYS.USER_NAME) || '골퍼 (나)';
+  } catch {
+    return '골퍼 (나)';
+  }
+}
+
+export function saveUserName(name: string) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.USER_NAME, name);
+  } catch (e) {
+    console.error('Failed to save user name', e);
+  }
+}
+
+// Realistic mock round for initial showcase (Single user only)
 function createInitialShowcaseRound(): Round {
   const course = PRESET_COURSES[0]; // 사우스스프링스 CC
   const holes = course.holes;
 
-  // Realistic 82 strokes round (10 over par)
-  // Holes: Pars are [4, 4, 3, 5, 4, 3, 4, 5, 4,  4, 5, 3, 4, 4, 3, 5, 4, 4]
-  // Scores: [4, 5, 3, 4, 5, 2, 5, 5, 4,  5, 6, 3, 4, 5, 4, 5, 4, 5] -> Birdies on 4 & 6!
   const scoresObj: Record<number, any> = {};
   const mockStrokes = [4, 5, 3, 4, 5, 2, 5, 5, 4, 5, 6, 3, 4, 5, 4, 5, 4, 5];
   const mockPutts =   [2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2];
@@ -71,31 +86,11 @@ function createInitialShowcaseRound(): Round {
     players: [
       {
         id: 'player-1',
-        name: '골퍼 (나)',
+        name: loadUserName(),
         handicap: 12,
         avatarColor: '#10b981',
         isMainUser: true,
         scores: scoresObj
-      },
-      {
-        id: 'player-2',
-        name: '김프로',
-        handicap: 4,
-        avatarColor: '#3b82f6',
-        isMainUser: false,
-        scores: Object.fromEntries(
-          holes.map((h, i) => [h.holeNumber, {
-            holeNumber: h.holeNumber,
-            strokes: h.par + (i % 5 === 0 ? -1 : i % 3 === 0 ? 1 : 0),
-            putts: 2,
-            obCount: 0,
-            hazardCount: 0,
-            bunkerCount: 0,
-            fairwayHit: 'hit',
-            gir: 'on',
-            sandSave: false
-          }])
-        )
       }
     ]
   };
@@ -109,7 +104,23 @@ export function loadRounds(): Round[] {
       saveRounds(initial);
       return initial;
     }
-    return JSON.parse(raw);
+    const parsed: Round[] = JSON.parse(raw);
+    const userName = loadUserName();
+
+    // Ensure only single main user is kept for each round
+    const cleaned = parsed.map(r => ({
+      ...r,
+      players: r.players
+        .filter(p => p.isMainUser || p.id === 'player-1' || p.id === r.players[0]?.id)
+        .slice(0, 1)
+        .map(p => ({
+          ...p,
+          name: p.name || userName,
+          isMainUser: true,
+        }))
+    }));
+
+    return cleaned;
   } catch (e) {
     console.error('Failed to load rounds', e);
     return [createInitialShowcaseRound()];

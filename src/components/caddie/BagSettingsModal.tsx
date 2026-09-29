@@ -1,7 +1,7 @@
 // src/components/caddie/BagSettingsModal.tsx
 import React, { useState } from 'react';
 import { PlayerClubProfile } from '../../types/golf';
-import { X, SlidersHorizontal, Check } from 'lucide-react';
+import { X, SlidersHorizontal, Check, User } from 'lucide-react';
 
 interface BagSettingsModalProps {
   isOpen: boolean;
@@ -38,8 +38,8 @@ export const BagSettingsModal: React.FC<BagSettingsModalProps> = ({
               <SlidersHorizontal size={18} />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white">나의 클럽백 & 비거리 세팅</h2>
-              <p className="text-xs text-slate-400">맞춤형 코스 공략을 위한 비거리 등록</p>
+              <h2 className="text-base font-bold text-white">나의 프로필 & 클럽백 세팅</h2>
+              <p className="text-xs text-slate-400">골퍼 이름과 클럽별 비거리 등록</p>
             </div>
           </div>
           <button
@@ -51,6 +51,24 @@ export const BagSettingsModal: React.FC<BagSettingsModalProps> = ({
         </div>
 
         <div className="space-y-4 pt-4 text-xs">
+          {/* Golfer Name Input */}
+          <div className="bg-black/30 p-3 rounded-2xl border border-emerald-950">
+            <div className="flex items-center justify-between mb-1">
+              <label className="font-bold text-white text-xs flex items-center gap-1.5">
+                <User size={13} className="text-emerald-400" />
+                <span>골퍼 이름 (플레이어 명칭)</span>
+              </label>
+              <span className="text-[10px] text-emerald-400 font-medium">사용자 이름</span>
+            </div>
+            <input
+              type="text"
+              value={form.userName || ''}
+              onChange={(e) => handleChange('userName', e.target.value)}
+              placeholder="이름 입력 (예: 김대표, 타이거)"
+              className="w-full bg-black/60 border border-emerald-900 rounded-xl px-3 py-2 text-white font-bold text-xs focus:outline-none focus:border-emerald-400"
+            />
+          </div>
+
           {/* Driver Distance */}
           <div className="bg-black/30 p-3 rounded-2xl border border-emerald-950">
             <div className="flex justify-between items-center mb-1">

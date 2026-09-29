@@ -25,6 +25,8 @@ import {
   getAllCourses,
   saveCustomCourse,
   deleteCustomCourse,
+  loadUserName,
+  saveUserName,
 } from './utils/storage';
 import { Course, HoleScore, PlayerClubProfile, Round } from './types/golf';
 import { PRESET_COURSES } from './data/presetCourses';
@@ -33,13 +35,16 @@ export const App: React.FC = () => {
   // Persistence state
   const [rounds, setRounds] = useState<Round[]>(() => loadRounds());
   const [activeRoundId, setActiveRoundId] = useState<string>(() => loadActiveRoundId() || 'showcase-round-1');
-  const [clubProfile, setClubProfile] = useState<PlayerClubProfile>(() => loadClubProfile());
+  const [userName, setUserName] = useState<string>(() => loadUserName());
+  const [clubProfile, setClubProfile] = useState<PlayerClubProfile>(() => {
+    const prof = loadClubProfile();
+    return { ...prof, userName: prof.userName || loadUserName() };
+  });
   const [courses, setCourses] = useState<Course[]>(() => getAllCourses());
 
   // Navigation state
   const [currentTab, setCurrentTab] = useState<NavTab>('round');
   const [activeHoleNumber, setActiveHoleNumber] = useState<number>(1);
-  const [activePlayerId, setActivePlayerId] = useState<string>('');
 
   // Modals
   const [isNewRoundOpen, setIsNewRoundOpen] = useState<boolean>(false);
@@ -57,15 +62,8 @@ export const App: React.FC = () => {
   const holes = currentCourse.holes;
   const currentHole = holes.find(h => h.holeNumber === activeHoleNumber) || holes[0];
 
-  // Active player
-  useEffect(() => {
-    if (activeRound && (!activePlayerId || !activeRound.players.some(p => p.id === activePlayerId))) {
-      const main = activeRound.players.find(p => p.isMainUser) || activeRound.players[0];
-      if (main) setActivePlayerId(main.id);
-    }
-  }, [activeRound, activePlayerId]);
-
-  const activePlayer = activeRound?.players.find(p => p.id === activePlayerId) || activeRound?.players[0];
+  // Single player (the golfer)
+  const activePlayer = activeRound?.players[0];
 
   // Save rounds whenever changed
   const updateRounds = (newRounds: Round[]) => {
@@ -91,18 +89,15 @@ export const App: React.FC = () => {
 
     const updatedScore = { ...currentScore, ...scorePatch };
 
-    const updatedPlayers = activeRound.players.map(p => {
-      if (p.id === activePlayer.id) {
-        return {
-          ...p,
-          scores: {
-            ...p.scores,
-            [holeNum]: updatedScore,
-          },
-        };
+    const updatedPlayers = [
+      {
+        ...activePlayer,
+        scores: {
+          ...activePlayer.scores,
+          [holeNum]: updatedScore,
+        },
       }
-      return p;
-    });
+    ];
 
     const updatedRound: Round = {
       ...activeRound,
@@ -119,6 +114,9 @@ export const App: React.FC = () => {
     updateRounds(updated);
     setActiveRoundId(newRound.id);
     saveActiveRoundId(newRound.id);
+    if (newRound.players[0]?.name) {
+      setUserName(newRound.players[0].name);
+    }
     setActiveHoleNumber(1);
     setCurrentTab('round');
   };
@@ -127,7 +125,6 @@ export const App: React.FC = () => {
   const handleSelectCourse = (selectedCourse: Course) => {
     if (!activeRound) return;
 
-    // Update active round's course info and sections
     const updatedRound: Round = {
       ...activeRound,
       courseId: selectedCourse.id,
@@ -153,10 +150,27 @@ export const App: React.FC = () => {
     setCourses(updatedList);
   };
 
-  // Club profile update
+  // Club profile update (including User Name)
   const handleSaveClubProfile = (profile: PlayerClubProfile) => {
     setClubProfile(profile);
     saveClubProfile(profile);
+
+    if (profile.userName && profile.userName.trim() && profile.userName !== userName) {
+      const newName = profile.userName.trim();
+      setUserName(newName);
+      saveUserName(newName);
+
+      // Synchronize active round player name
+      if (activeRound) {
+        const updatedPlayers = activeRound.players.map(p => ({
+          ...p,
+          name: newName,
+        }));
+        const updatedRound = { ...activeRound, players: updatedPlayers };
+        const newRounds = rounds.map(r => r.id === updatedRound.id ? updatedRound : r);
+        updateRounds(newRounds);
+      }
+    }
   };
 
   // Prev / Next Hole
@@ -170,16 +184,16 @@ export const App: React.FC = () => {
     if (activeHoleNumber < 18) {
       setActiveHoleNumber(activeHoleNumber + 1);
     } else {
-      // Completed round, navigate to analytics dashboard
       setCurrentTab('analytics');
     }
   };
 
   return (
     <MobileFrame>
-      {/* Header with interactive course search click */}
+      {/* Header with interactive course search and Golfer Name display */}
       <Header
         round={activeRound}
+        userName={userName}
         onOpenNewRound={() => setIsNewRoundOpen(true)}
         onOpenCaddieChat={() => setIsCaddieChatOpen(true)}
         onOpenBagSettings={() => setIsBagSettingsOpen(true)}
@@ -202,9 +216,6 @@ export const App: React.FC = () => {
           <HoleScoreInput
             hole={currentHole}
             player={activePlayer}
-            players={activeRound.players}
-            activePlayerId={activePlayerId}
-            onSelectPlayer={(id) => setActivePlayerId(id)}
             onUpdateScore={handleUpdateScore}
             onPrevHole={handlePrevHole}
             onNextHole={handleNextHole}

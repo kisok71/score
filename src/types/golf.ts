@@ -82,6 +82,7 @@ export interface Round {
 }
 
 export interface PlayerClubProfile {
+  userName?: string;         // 골퍼 이름 (기본값: '골퍼 (나)')
   driverDistance: number;    // 기본 220m
   wood3Distance: number;     // 200m
   utilityDistance: number;   // 185m

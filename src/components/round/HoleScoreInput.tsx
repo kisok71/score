@@ -24,9 +24,6 @@ import {
 interface HoleScoreInputProps {
   hole: HoleInfo;
   player: Player;
-  players: Player[];
-  activePlayerId: string;
-  onSelectPlayer: (id: string) => void;
   onUpdateScore: (holeNum: number, score: Partial<HoleScore>) => void;
   onPrevHole: () => void;
   onNextHole: () => void;
@@ -37,9 +34,6 @@ interface HoleScoreInputProps {
 export const HoleScoreInput: React.FC<HoleScoreInputProps> = ({
   hole,
   player,
-  players,
-  activePlayerId,
-  onSelectPlayer,
   onUpdateScore,
   onPrevHole,
   onNextHole,
@@ -162,37 +156,16 @@ export const HoleScoreInput: React.FC<HoleScoreInputProps> = ({
         </div>
       </div>
 
-      {/* Multi-Player Switcher (If multiple players) */}
-      {players.length > 1 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {players.map((p) => {
-            const isSelected = p.id === activePlayerId;
-            const pScore = p.scores[hole.holeNumber]?.strokes;
-            return (
-              <button
-                key={p.id}
-                onClick={() => onSelectPlayer(p.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-2xl border text-xs transition-all ${
-                  isSelected
-                    ? 'bg-emerald-600/30 border-emerald-400 text-white font-bold'
-                    : 'bg-slate-900/60 border-slate-800 text-slate-400'
-                }`}
-              >
-                <span
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: p.avatarColor }}
-                />
-                <span>{p.name}</span>
-                {pScore && (
-                  <span className="font-mono text-emerald-300 font-bold bg-black/40 px-1.5 rounded">
-                    {pScore}타
-                  </span>
-                )}
-              </button>
-            );
-          })}
+      {/* Active Golfer Status Banner */}
+      <div className="flex items-center justify-between px-2 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
+          <span className="font-bold text-white text-xs">{player.name}님의 라운드</span>
         </div>
-      )}
+        <span className="text-[11px] text-emerald-400/80 font-mono bg-emerald-950/60 border border-emerald-900/60 px-2 py-0.5 rounded-full">
+          HDCP {player.handicap}
+        </span>
+      </div>
 
       {/* Main Score Input Section */}
       <div className="bg-[#111a16] border border-emerald-900/40 rounded-3xl p-4 space-y-4 shadow-xl">

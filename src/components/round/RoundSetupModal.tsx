@@ -6,19 +6,17 @@ import {
   Calendar,
   Clock,
   Flag,
-  Users,
-  Plus,
-  Trash2,
+  User,
   Sun,
   Cloud,
   Wind,
   CloudRain,
   Search,
   MapPin,
-  Sparkles,
 } from 'lucide-react';
 import { CourseSearchModal } from '../course/CourseSearchModal';
 import { CustomCourseBuilderModal } from '../course/CustomCourseBuilderModal';
+import { loadUserName, saveUserName } from '../../utils/storage';
 
 interface RoundSetupModalProps {
   isOpen: boolean;
@@ -44,30 +42,17 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
   const [weather, setWeather] = useState<WeatherType>('sunny');
   const [windSpeed, setWindSpeed] = useState<number>(2);
 
+  // Single player settings (companion removed)
+  const [userName, setUserName] = useState<string>(() => loadUserName());
+  const [handicap, setHandicap] = useState<number>(12);
+
   // Sub modals
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isBuilderOpen, setIsBuilderOpen] = useState<boolean>(false);
 
-  const [playersList, setPlayersList] = useState<{ name: string; handicap: number }[]>([
-    { name: '골퍼 (나)', handicap: 12 },
-  ]);
-  const [newPlayerName, setNewPlayerName] = useState<string>('');
-
   if (!isOpen) return null;
 
   const currentCourse = courses.find(c => c.id === selectedCourseId) || courses[0];
-
-  const handleAddPlayer = () => {
-    if (!newPlayerName.trim()) return;
-    if (playersList.length >= 4) return;
-    setPlayersList([...playersList, { name: newPlayerName.trim(), handicap: 18 }]);
-    setNewPlayerName('');
-  };
-
-  const handleRemovePlayer = (idx: number) => {
-    if (idx === 0) return; // cannot remove main user
-    setPlayersList(playersList.filter((_, i) => i !== idx));
-  };
 
   const handleSelectCourseFromSearch = (course: Course) => {
     setSelectedCourseId(course.id);
@@ -79,7 +64,8 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
   };
 
   const handleSave = () => {
-    const avatarColors = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899'];
+    const finalUserName = userName.trim() || '골퍼';
+    saveUserName(finalUserName);
 
     const newRound: Round = {
       id: `round-${Date.now()}`,
@@ -93,26 +79,28 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
       windSpeed,
       status: 'in-progress',
       createdAt: Date.now(),
-      players: playersList.map((p, idx) => ({
-        id: `player-${Date.now()}-${idx}`,
-        name: p.name,
-        handicap: p.handicap,
-        avatarColor: avatarColors[idx % avatarColors.length],
-        isMainUser: idx === 0,
-        scores: Object.fromEntries(
-          currentCourse.holes.map(h => [h.holeNumber, {
-            holeNumber: h.holeNumber,
-            strokes: h.par,
-            putts: 2,
-            obCount: 0,
-            hazardCount: 0,
-            bunkerCount: 0,
-            fairwayHit: h.par >= 4 ? 'hit' : 'none',
-            gir: 'on',
-            sandSave: false,
-          }])
-        ),
-      })),
+      players: [
+        {
+          id: `player-${Date.now()}-0`,
+          name: finalUserName,
+          handicap: Number(handicap) || 0,
+          avatarColor: '#10b981',
+          isMainUser: true,
+          scores: Object.fromEntries(
+            currentCourse.holes.map(h => [h.holeNumber, {
+              holeNumber: h.holeNumber,
+              strokes: h.par,
+              putts: 2,
+              obCount: 0,
+              hazardCount: 0,
+              bunkerCount: 0,
+              fairwayHit: h.par >= 4 ? 'hit' : 'none',
+              gir: 'on',
+              sandSave: false,
+            }])
+          ),
+        }
+      ],
     };
 
     onCreateRound(newRound);
@@ -144,7 +132,7 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
 
           {/* Form Body */}
           <div className="space-y-4 pt-4 text-xs">
-            {/* 1. 골프장 선택 & 검색 (핵심 수정 영역) */}
+            {/* 1. 골프장 선택 & 검색 */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-slate-300 font-semibold flex items-center gap-1">
@@ -199,7 +187,42 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
               </div>
             </div>
 
-            {/* 2. 날짜 및 티업시간 */}
+            {/* 2. 사용자(골퍼) 이름 및 핸디캡 설정 (동반자 제거 후 메인으로 배치) */}
+            <div className="bg-black/30 border border-emerald-950 rounded-2xl p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-slate-200 font-bold flex items-center gap-1.5">
+                  <User size={13} className="text-emerald-400" />
+                  <span>골퍼(플레이어) 이름 설정</span>
+                </label>
+                <span className="text-[10px] text-slate-400">단일 플레이어 기록</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <div className="col-span-2">
+                  <label className="text-[10px] text-slate-400 block mb-1">사용자 이름</label>
+                  <input
+                    type="text"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="이름 입력 (예: 김대표, 타이거)"
+                    className="w-full bg-black/60 border border-emerald-900 rounded-xl px-3 py-2 text-white font-bold text-xs focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1">핸디캡 (HDCP)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="72"
+                    value={handicap}
+                    onChange={(e) => setHandicap(Number(e.target.value))}
+                    className="w-full bg-black/60 border border-emerald-900 rounded-xl px-2 py-2 text-white font-mono font-bold text-xs text-center focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. 날짜 및 티업시간 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-slate-300 font-semibold flex items-center gap-1 mb-1.5">
@@ -227,7 +250,7 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
               </div>
             </div>
 
-            {/* 3. 티 박스 선택 */}
+            {/* 4. 티 박스 선택 */}
             <div>
               <label className="text-slate-300 font-semibold block mb-1.5">티 박스 (Tee Box)</label>
               <div className="grid grid-cols-4 gap-2">
@@ -253,7 +276,7 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
               </div>
             </div>
 
-            {/* 4. 날씨 & 풍속 */}
+            {/* 5. 날씨 & 풍속 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-slate-300 font-semibold block mb-1.5">날씨</label>
@@ -301,58 +324,6 @@ export const RoundSetupModal: React.FC<RoundSetupModalProps> = ({
                   </span>
                 </div>
               </div>
-            </div>
-
-            {/* 5. 동반자 설정 (최대 4인) */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-slate-300 font-semibold flex items-center gap-1">
-                  <Users size={13} className="text-emerald-400" />
-                  <span>동반 플레이어 ({playersList.length}/4명)</span>
-                </label>
-              </div>
-
-              <div className="space-y-1.5 mb-2">
-                {playersList.map((p, idx) => (
-                  <div key={idx} className="flex items-center justify-between bg-black/30 border border-slate-800 rounded-xl p-2">
-                    <span className="font-bold text-white text-xs">
-                      {idx === 0 ? `👑 ${p.name}` : p.name}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400">핸디캡 {p.handicap}</span>
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePlayer(idx)}
-                          className="text-slate-500 hover:text-red-400"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {playersList.length < 4 && (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                    placeholder="동반자 이름 (예: 김프로)"
-                    className="flex-1 bg-black/40 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddPlayer}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold text-xs flex items-center gap-1"
-                  >
-                    <Plus size={13} />
-                    <span>추가</span>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 

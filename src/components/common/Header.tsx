@@ -5,6 +5,7 @@ import { Round } from '../../types/golf';
 
 interface HeaderProps {
   round: Round | null;
+  userName?: string;
   onOpenNewRound: () => void;
   onOpenCaddieChat: () => void;
   onOpenBagSettings: () => void;
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   round,
+  userName,
   onOpenNewRound,
   onOpenCaddieChat,
   onOpenBagSettings,
@@ -81,11 +83,13 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="mt-2 pt-2 border-t border-emerald-950 flex items-center justify-between text-[11px] text-slate-400">
           <div
             onClick={onOpenCourseSearch}
-            className="flex items-center gap-2 cursor-pointer hover:text-emerald-300 transition-colors"
+            className="flex items-center gap-1.5 cursor-pointer hover:text-emerald-300 transition-colors truncate max-w-[210px]"
           >
-            <span className="text-emerald-300 font-medium">{round.courseSection}</span>
+            <span className="text-white font-bold">{userName || round.players[0]?.name}</span>
             <span className="text-slate-600">•</span>
-            <span>{round.date} ({round.teeOffTime})</span>
+            <span className="text-emerald-300 font-medium truncate">{round.courseSection}</span>
+            <span className="text-slate-600">•</span>
+            <span>{round.teeOffTime}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="capitalize px-1.5 py-0.5 rounded bg-slate-800/80 text-slate-300 border border-slate-700 text-[10px]">

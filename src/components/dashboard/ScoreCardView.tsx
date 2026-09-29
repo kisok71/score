@@ -15,10 +15,8 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
   holes,
   mainPlayer,
 }) => {
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(mainPlayer.id);
   const [isCopied, setIsCopied] = useState<boolean>(false);
-
-  const activePlayer = round.players.find(p => p.id === selectedPlayerId) || mainPlayer;
+  const activePlayer = mainPlayer;
 
   // Split into Out (1-9) and In (10-18)
   const outHoles = holes.filter(h => h.holeNumber <= 9);
@@ -125,24 +123,16 @@ export const ScoreCardView: React.FC<ScoreCardViewProps> = ({
           </button>
         </div>
 
-        {/* Player Selector if multi-player */}
-        {round.players.length > 1 && (
-          <div className="flex items-center gap-2 pt-2 border-t border-emerald-950 overflow-x-auto">
-            {round.players.map(p => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedPlayerId(p.id)}
-                className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all border ${
-                  p.id === activePlayer.id
-                    ? 'bg-emerald-500 text-black font-extrabold border-emerald-400'
-                    : 'bg-black/30 border-slate-800 text-slate-400'
-                }`}
-              >
-                {p.name} ({p.handicap})
-              </button>
-            ))}
+        {/* Golfer Info Ribbon */}
+        <div className="flex items-center justify-between pt-2 border-t border-emerald-950 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+            <span className="font-bold text-white text-xs">{mainPlayer.name} 골퍼</span>
           </div>
-        )}
+          <span className="text-[11px] text-emerald-400 font-mono bg-emerald-950/60 border border-emerald-900/60 px-2 py-0.5 rounded-full">
+            공인 핸디캡: {mainPlayer.handicap}
+          </span>
+        </div>
 
         {/* Summary Metric Ribbon */}
         <div className="grid grid-cols-4 gap-2 text-center mt-3 pt-3 border-t border-emerald-950/80">
