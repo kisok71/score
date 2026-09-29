@@ -1,7 +1,8 @@
 // src/components/dashboard/AnalyticsDashboard.tsx
 import React, { useState } from 'react';
-import { HoleInfo, Round, RoundStats } from '../../types/golf';
+import { Course, HoleInfo, Round, RoundStats } from '../../types/golf';
 import { calculateRoundStats, getCaddieMentalAdvice } from '../../utils/golfCalculator';
+import { MultiRoundAnalytics } from './MultiRoundAnalytics';
 import {
   TrendingUp,
   Award,
@@ -13,19 +14,25 @@ import {
   PieChart,
   Activity,
   AlertCircle,
+  Layers,
 } from 'lucide-react';
 
 interface AnalyticsDashboardProps {
   round: Round;
   holes: HoleInfo[];
   allRounds: Round[];
+  allCourses?: Course[];
+  onSelectRound?: (roundId: string) => void;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   round,
   holes,
   allRounds,
+  allCourses = [],
+  onSelectRound,
 }) => {
+  const [dashboardMode, setDashboardMode] = useState<'multi' | 'single'>('multi');
   const [selectedSubTab, setSelectedSubTab] = useState<'overview' | 'parStats' | 'shotDetails' | 'courses'>('overview');
 
   const mainPlayer = round.players.find(p => p.isMainUser) || round.players[0];
@@ -44,19 +51,54 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   return (
     <div className="p-4 space-y-4 max-w-full">
-      {/* Top Banner / Round Summary Card */}
-      <div className="bg-gradient-to-br from-[#0e241c] to-[#081510] border border-emerald-800/40 rounded-3xl p-4 shadow-xl relative overflow-hidden">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest block">
-              Round Performance
-            </span>
-            <h2 className="text-xl font-black text-white">{round.courseName}</h2>
-          </div>
-          <span className="text-xs font-mono text-slate-400 bg-black/40 px-2.5 py-1 rounded-xl border border-emerald-950">
-            {round.date}
-          </span>
-        </div>
+      {/* Top Main Mode Switcher: Multi-Round vs Single-Round */}
+      <div className="grid grid-cols-2 gap-1.5 p-1 bg-black/60 border border-emerald-950 rounded-2xl">
+        <button
+          onClick={() => setDashboardMode('multi')}
+          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+            dashboardMode === 'multi'
+              ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-950'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <TrendingUp size={14} />
+          <span>10경기 / 연도별 분석</span>
+        </button>
+        <button
+          onClick={() => setDashboardMode('single')}
+          className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+            dashboardMode === 'single'
+              ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-lg shadow-emerald-950'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Flag size={14} />
+          <span>이번 라운드 상세</span>
+        </button>
+      </div>
+
+      {/* Render Multi-Round Analytics if selected */}
+      {dashboardMode === 'multi' ? (
+        <MultiRoundAnalytics
+          rounds={allRounds}
+          allCourses={allCourses}
+          onSelectRound={onSelectRound}
+        />
+      ) : (
+        <>
+          {/* Top Banner / Round Summary Card */}
+          <div className="bg-gradient-to-br from-[#0e241c] to-[#081510] border border-emerald-800/40 rounded-3xl p-4 shadow-xl relative overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest block">
+                  Round Performance
+                </span>
+                <h2 className="text-xl font-black text-white">{round.courseName}</h2>
+              </div>
+              <span className="text-xs font-mono text-slate-400 bg-black/40 px-2.5 py-1 rounded-xl border border-emerald-950">
+                {round.date}
+              </span>
+            </div>
 
         {/* Big Score Summary */}
         <div className="grid grid-cols-3 gap-2 text-center py-2 border-y border-emerald-900/40 my-2">
@@ -415,6 +457,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

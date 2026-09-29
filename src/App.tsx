@@ -8,6 +8,7 @@ import { HoleScoreInput } from './components/round/HoleScoreInput';
 import { CourseStrategyMap } from './components/course/CourseStrategyMap';
 import { ScoreCardView } from './components/dashboard/ScoreCardView';
 import { AnalyticsDashboard } from './components/dashboard/AnalyticsDashboard';
+import { RoundHistoryView } from './components/history/RoundHistoryView';
 import { RoundSetupModal } from './components/round/RoundSetupModal';
 import { PenaltyGuideModal } from './components/round/PenaltyGuideModal';
 import { CaddieChatModal } from './components/caddie/CaddieChatModal';
@@ -19,6 +20,9 @@ import { BackupRestoreModal } from './components/common/BackupRestoreModal';
 import {
   loadRounds,
   saveRounds,
+  deleteRound,
+  updateRound,
+  resetSampleRounds,
   loadActiveRoundId,
   saveActiveRoundId,
   loadClubProfile,
@@ -191,6 +195,43 @@ export const App: React.FC = () => {
     setActiveHoleNumber(1);
   };
 
+  // Round management handlers (Select, Delete, Update, Reset Samples)
+  const handleSelectActiveRound = (roundId: string) => {
+    setActiveRoundId(roundId);
+    saveActiveRoundId(roundId);
+    const targetRound = rounds.find(r => r.id === roundId);
+    if (targetRound) {
+      if (targetRound.status === 'in-progress') {
+        setCurrentTab('round');
+      } else {
+        setCurrentTab('scorecard');
+      }
+    }
+  };
+
+  const handleDeleteRound = (roundId: string) => {
+    const updated = deleteRound(roundId);
+    setRounds(updated);
+    if (activeRoundId === roundId) {
+      if (updated.length > 0) {
+        setActiveRoundId(updated[0].id);
+      }
+    }
+  };
+
+  const handleUpdateRound = (updatedRound: Round) => {
+    const updated = updateRound(updatedRound);
+    setRounds(updated);
+  };
+
+  const handleResetSamples = () => {
+    const fresh = resetSampleRounds();
+    setRounds(fresh);
+    if (fresh.length > 0) {
+      setActiveRoundId(fresh[0].id);
+    }
+  };
+
   // Prev / Next Hole
   const handlePrevHole = () => {
     if (activeHoleNumber > 1) {
@@ -264,6 +305,21 @@ export const App: React.FC = () => {
             round={activeRound}
             holes={holes}
             allRounds={rounds}
+            allCourses={courses}
+            onSelectRound={handleSelectActiveRound}
+          />
+        )}
+
+        {currentTab === 'history' && (
+          <RoundHistoryView
+            rounds={rounds}
+            activeRoundId={activeRoundId}
+            allCourses={courses}
+            onSelectRound={handleSelectActiveRound}
+            onDeleteRound={handleDeleteRound}
+            onUpdateRound={handleUpdateRound}
+            onOpenNewRound={() => setIsNewRoundOpen(true)}
+            onResetSamples={handleResetSamples}
           />
         )}
       </main>

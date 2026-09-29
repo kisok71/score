@@ -1,5 +1,6 @@
 // src/utils/storage.ts
 import { PRESET_COURSES } from '../data/presetCourses';
+import { generateSampleRounds } from '../data/sampleRounds';
 import { Course, PlayerClubProfile, Round } from '../types/golf';
 
 const STORAGE_KEYS = {
@@ -37,75 +38,28 @@ export function saveUserName(name: string) {
   }
 }
 
-// Realistic mock round for initial showcase (Single user only)
-function createInitialShowcaseRound(): Round {
-  const course = PRESET_COURSES[0]; // 사우스스프링스 CC
-  const holes = course.holes;
-
-  const scoresObj: Record<number, any> = {};
-  const mockStrokes = [4, 5, 3, 4, 5, 2, 5, 5, 4, 5, 6, 3, 4, 5, 4, 5, 4, 5];
-  const mockPutts =   [2, 2, 1, 1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 1, 2];
-  const mockFw: ('hit' | 'left' | 'right' | 'none')[] = [
-    'hit', 'right', 'none', 'hit', 'hit', 'none', 'left', 'hit', 'hit',
-    'hit', 'left', 'none', 'hit', 'right', 'none', 'hit', 'hit', 'left'
-  ];
-  const mockGir: ('on' | 'miss')[] = [
-    'on', 'miss', 'on', 'on', 'miss', 'on', 'miss', 'on', 'on',
-    'miss', 'miss', 'on', 'on', 'miss', 'miss', 'on', 'on', 'miss'
-  ];
-  const mockOb = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
-  const mockHazard = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-
-  holes.forEach((h, i) => {
-    scoresObj[h.holeNumber] = {
-      holeNumber: h.holeNumber,
-      strokes: mockStrokes[i],
-      putts: mockPutts[i],
-      obCount: mockOb[i],
-      hazardCount: mockHazard[i],
-      bunkerCount: i === 1 ? 1 : 0,
-      fairwayHit: mockFw[i],
-      gir: mockGir[i],
-      sandSave: i === 1,
-      notes: i === 5 ? '환상의 7m 버디 퍼트 성공!' : undefined
-    };
-  });
-
-  return {
-    id: 'showcase-round-1',
-    date: '2026-09-28',
-    teeOffTime: '07:28',
-    courseId: course.id,
-    courseName: course.name,
-    courseSection: `${course.courses.outCourseName} / ${course.courses.inCourseName}`,
-    teeBox: 'white',
-    weather: 'sunny',
-    windSpeed: 2,
-    status: 'completed',
-    createdAt: Date.now() - 86400000,
-    players: [
-      {
-        id: 'player-1',
-        name: loadUserName(),
-        handicap: 12,
-        avatarColor: '#10b981',
-        isMainUser: true,
-        scores: scoresObj
-      }
-    ]
-  };
-}
-
 export function loadRounds(): Round[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.ROUNDS);
+    const userName = loadUserName();
     if (!raw) {
-      const initial = [createInitialShowcaseRound()];
+      const initial = generateSampleRounds(userName);
       saveRounds(initial);
       return initial;
     }
     const parsed: Round[] = JSON.parse(raw);
-    const userName = loadUserName();
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      const initial = generateSampleRounds(userName);
+      saveRounds(initial);
+      return initial;
+    }
+
+    // If storage only had the legacy single round ('showcase-round-1'), upgrade to 10 sample rounds
+    if (parsed.length === 1 && parsed[0].id === 'showcase-round-1') {
+      const initial = generateSampleRounds(userName);
+      saveRounds(initial);
+      return initial;
+    }
 
     // Ensure only single main user is kept for each round
     const cleaned = parsed.map(r => ({
@@ -123,7 +77,7 @@ export function loadRounds(): Round[] {
     return cleaned;
   } catch (e) {
     console.error('Failed to load rounds', e);
-    return [createInitialShowcaseRound()];
+    return generateSampleRounds(loadUserName());
   }
 }
 
@@ -135,8 +89,43 @@ export function saveRounds(rounds: Round[]) {
   }
 }
 
+export function deleteRound(roundId: string): Round[] {
+  const current = loadRounds();
+  const updated = current.filter(r => r.id !== roundId);
+  saveRounds(updated);
+
+  const activeId = loadActiveRoundId();
+  if (activeId === roundId) {
+    if (updated.length > 0) {
+      saveActiveRoundId(updated[0].id);
+    }
+  }
+
+  return updated;
+}
+
+export function updateRound(updatedRound: Round): Round[] {
+  const current = loadRounds();
+  const exists = current.some(r => r.id === updatedRound.id);
+  const updated = exists
+    ? current.map(r => r.id === updatedRound.id ? updatedRound : r)
+    : [updatedRound, ...current];
+  saveRounds(updated);
+  return updated;
+}
+
+export function resetSampleRounds(): Round[] {
+  const userName = loadUserName();
+  const samples = generateSampleRounds(userName);
+  saveRounds(samples);
+  if (samples.length > 0) {
+    saveActiveRoundId(samples[0].id);
+  }
+  return samples;
+}
+
 export function loadActiveRoundId(): string | null {
-  return localStorage.getItem(STORAGE_KEYS.ACTIVE_ROUND_ID) || 'showcase-round-1';
+  return localStorage.getItem(STORAGE_KEYS.ACTIVE_ROUND_ID) || 'sample-round-1';
 }
 
 export function saveActiveRoundId(id: string) {
