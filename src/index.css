@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-fairway: #15803d;
+    --color-green: #10b981;
+    --color-bunker: #f59e0b;
+    --color-water: #0ea5e9;
+    --color-ob: #ef4444;
+  }
+
+  body {
+    background-color: #0b1411;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+}
+
+/* Custom scrollbar for mobile feel */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #0b1411;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e3a2f;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
+}
+
+/* Pulse animation for current hole marker */
+@keyframes pin-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-pin {
+  animation: pin-bounce 1.8s infinite ease-in-out;
+}
